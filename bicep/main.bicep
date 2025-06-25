@@ -49,7 +49,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2020-08-01' = {
 
 module aks 'modules/aks-cluster.bicep' = {
   name: 'AksCluster'
-  
+
   params: {
     prefix: prefix
     suffix: suffix
@@ -59,18 +59,21 @@ module aks 'modules/aks-cluster.bicep' = {
     aksSettings: {
       clusterName: '${prefix}-${suffix}-aks'
       identity: 'SystemAssigned'
+      sku: {
+        name: ''
+        tier: aksSkuTier
+      }
       kubernetesVersion: k8sVersion
-      networkPlugin: 'azure'
-      networkPolicy: aksNetworkPolicy
-      serviceCidr: '172.16.0.0/22' // can be reused in multiple clusters; no overlap with other IP ranges
+      networkPluginType: 'azure'
+      networkPolicy: 'calico'
+      serviceCidr: '172.16.0.0/22'
       dnsServiceIP: '172.16.0.10'
       dockerBridgeCidr: '172.16.4.1/22'
       outboundType: 'loadBalancer'
       loadBalancerSku: 'standard'
-      sku_tier: aksSkuTier			
-      enableRBAC: true 
+      enableRBAC: true
       aadProfileManaged: true
-      adminGroupObjectIDs: adminGroupObjectIDs 
+      adminGroupObjectIDs: adminGroupObjectIDs
     }
 
     defaultNodePool: {
@@ -84,9 +87,10 @@ module aks 'modules/aks-cluster.bicep' = {
       type: 'VirtualMachineScaleSets'
       mode: 'System'
     }
-    
   }
 }
+
+
 
 resource acr 'Microsoft.ContainerRegistry/registries@2020-11-01-preview' = {
   name: '${prefix}${suffix}'
@@ -98,6 +102,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2020-11-01-preview' = {
     adminUserEnabled: acrAdminUserEnabled
   }
 }
+
 
 resource aksAcrPermissions 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid(resourceGroup().id)
