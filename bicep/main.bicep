@@ -32,6 +32,17 @@ param aksNodes int
 ])
 param aksNetworkPolicy string = 'calico'
 
+@allowed([
+  'Standard_LRS'
+  'Standard_GRS'
+  'Standard_RAGRS'
+  'Standard_ZRS'
+  'Premium_LRS'
+])
+param storageSku string = 'Standard_LRS'
+
+param storageAccountName string
+
 // create vnet if the vnetId is empty
 resource vnet 'Microsoft.Network/virtualNetworks@2020-08-01' = {
   name: vnetName == '' ? '${prefix}-${suffix}-vnet' : vnetName
@@ -105,5 +116,38 @@ resource aksAcrPermissions 'Microsoft.Authorization/roleAssignments@2020-04-01-p
   properties: {
     principalId: aks.outputs.identity
     roleDefinitionId: acrRole
+  }
+}
+
+// New Azure Storage Account resource
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+  name: storageAccountName
+  location: resourceGroup().location
+  sku: {
+    name: storageSku
+  }
+  kind: 'StorageV2'
+  tags: {}
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: true
+    accessTier: 'Hot'
+    supportsHttpsTrafficOnly: true
+    encryption: {
+      services: {
+        blob: {
+          enabled: true
+        }
+        file: {
+          enabled: true
+        }
+      }
+      keySource: 'Microsoft.Storage'
+    }
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+    }
   }
 }
