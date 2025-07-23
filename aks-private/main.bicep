@@ -277,3 +277,78 @@ module storage 'br:amarildobicep.azurecr.io/bicep/modules/storage-account:v1.0.0
     tags: storageAccountTags
   }
 }
+
+// Deploy Azure Key Vault using public AVM module
+module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
+  name: 'keyvault-deployment'
+  scope: rg
+  params: {
+    // Required parameters
+    name: 'akskv-${uniqueString(subscription().subscriptionId, rgName)}'
+    
+    // Non-required parameters
+    location: location
+    sku: 'standard'
+    enableRbacAuthorization: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+    enablePurgeProtection: true
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+    
+    // Role assignments for AKS cluster identity
+    roleAssignments: [
+      {
+        principalId: aks.outputs.identity
+        principalType: 'ServicePrincipal'
+        roleDefinitionIdOrName: 'Key Vault Secrets User'
+      }
+    ]
+    
+    // Diagnostic settings for logging
+    diagnosticSettings: [
+      {
+        name: 'keyvault-diagnostics'
+        workspaceResourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${rgName}/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-${subscription().subscriptionId}-${location}'
+        logs: [
+          {
+            categoryGroup: 'allLogs'
+            enabled: true
+          }
+        ]
+        metrics: [
+          {
+            category: 'AllMetrics'
+            enabled: true
+          }
+        ]
+      }
+    ]
+    
+    // Sample secrets for demonstration
+    secrets: [
+      {
+        name: 'DatabaseConnectionString'
+        value: 'Server=myserver;Database=mydatabase;User Id=myuser;Password=mypassword;'
+        attributes: {
+          enabled: true
+        }
+      }
+      {
+        name: 'ApiKey'
+        value: 'your-api-key-here'
+        attributes: {
+          enabled: true
+        }
+      }
+    ]
+    
+    tags: {
+      Environment: 'Production'
+      Project: 'AKS'
+      Purpose: 'Secrets Management'
+    }
+  }
+}
