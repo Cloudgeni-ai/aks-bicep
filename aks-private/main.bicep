@@ -137,6 +137,23 @@ param acrName string = 'gebaaksacr'
 param acrAdminUserEnabled bool = true
 param acrRole string
 
+// storage account parameters
+param storageAccountName string = 'aksstorage${uniqueString(subscription().subscriptionId, rgName)}'
+@allowed([
+  'Standard_LRS'
+  'Standard_GRS'
+  'Standard_RAGRS'
+  'Standard_ZRS'
+  'Premium_LRS'
+  'Premium_ZRS'
+])
+param storageSkuName string = 'Standard_LRS'
+param enableDataLakeGen2 bool = false
+param storageAccountTags object = {
+  Environment: 'Production'
+  Project: 'AKS'
+}
+
 // create resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-01-01' = {
   name: rgName
@@ -240,5 +257,23 @@ module acr 'modules/acr.bicep' = {
     principalId: aks.outputs.identity
     acrSubnet: vnet.outputs.mgmtSubnetId
     vnetId: vnet.outputs.Id
+  }
+}
+
+// Deploy storage account using published module from ACR
+module storage 'br:amarildobicep.azurecr.io/bicep/modules/storage-account:v1.0.0' = {
+  name: 'storage-deployment'
+  scope: rg
+  params: {
+    storageAccountName: storageAccountName
+    location: location
+    skuName: storageSkuName
+    kind: 'StorageV2'
+    accessTier: 'Hot'
+    enableHierarchicalNamespace: enableDataLakeGen2
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    tags: storageAccountTags
   }
 }

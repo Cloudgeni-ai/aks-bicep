@@ -32,6 +32,19 @@ param aksNodes int
 ])
 param aksNetworkPolicy string = 'calico'
 
+// storage account parameters
+param storageAccountName string
+@allowed([
+  'Standard_LRS'
+  'Standard_GRS'
+  'Standard_RAGRS'
+  'Standard_ZRS'
+  'Premium_LRS'
+  'Premium_ZRS'
+])
+param storageSkuName string = 'Standard_LRS'
+param enableDataLakeGen2 bool = false
+
 // create vnet if the vnetId is empty
 resource vnet 'Microsoft.Network/virtualNetworks@2020-08-01' = {
   name: vnetName == '' ? '${prefix}-${suffix}-vnet' : vnetName
@@ -105,5 +118,25 @@ resource aksAcrPermissions 'Microsoft.Authorization/roleAssignments@2020-04-01-p
   properties: {
     principalId: aks.outputs.identity
     roleDefinitionId: acrRole
+  }
+}
+
+// Deploy storage account using published module from ACR
+module storage 'br:amarildobicep.azurecr.io/bicep/modules/storage-account:v1.0.0' = {
+  name: 'storage-deployment'
+  params: {
+    storageAccountName: storageAccountName
+    location: resourceGroup().location
+    skuName: storageSkuName
+    kind: 'StorageV2'
+    accessTier: 'Hot'
+    enableHierarchicalNamespace: enableDataLakeGen2
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    tags: {
+      Environment: 'Development'
+      Project: 'AKS'
+    }
   }
 }
