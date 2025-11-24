@@ -2,9 +2,9 @@ param prefix string
 param suffix string
 param vnetPrefix string = '10.0.0.0/16'
 param k8sVersion string = '1.19.7'
-param adminUsername string = 'azureuser'
 param adminPublicKey string
 param adminGroupObjectIDs array = []
+
 param vnetName string
 
 @allowed([
