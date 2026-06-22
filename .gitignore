@@ -1,0 +1,26 @@
+# Bicep compiled ARM templates
+*.json.bak
+*.compiled.json
+
+# Azure CLI local config overrides
+.azure/
+
+# Local parameter override files (avoid committing secrets)
+*-local.json
+*.local.parameters.json
+
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform (if used alongside)
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
